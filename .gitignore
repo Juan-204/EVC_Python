@@ -1,0 +1,12 @@
+#carpeta de el archivo ejecutable
+build
+dist
+
+#cache de python
+__pycache__
+
+#variables de entorno
+.venv
+
+#.idea
+.idea
