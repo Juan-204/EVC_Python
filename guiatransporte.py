@@ -5,8 +5,95 @@ from PyQt5.QtCore import  QDate, Qt
 
 
 from consultas import OperacionesDB  # Asegúrate de importar la clase de operaciones DB
+import traceback
+
 
 class GuiaTransporteApp(QWidget):
+    
+    def apply_general_styles(self):
+        self.setStyleSheet("""
+            /* Estilos generales para toda la ventana */
+            QWidget {
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 20px;
+                background-color: #f5f5f5;
+            }
+            
+            /* Estilos para QLabel */
+            QLabel {
+                font-weight: bold;
+                color: #333;
+                padding: 5px;
+            }
+            
+            /* Estilos para campos de entrada */
+            QLineEdit, QComboBox, QDateEdit, QSpinBox {
+                background-color: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 8px;
+                min-height: 30px;
+                min-width: 150px;
+            }
+            
+            QLineEdit:focus, QComboBox:focus, QDateEdit:focus {
+                border: 2px solid #3f51b5;
+                background-color: #f0f5ff;
+            }
+            
+            /* Estilos para QComboBox */
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 25px;
+                border-left-width: 1px;
+                border-left-color: #ddd;
+                border-left-style: solid;
+            }
+            
+            /* Estilos para QPushButton */
+            QPushButton {
+                background-color: #3f51b5;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 10px 15px;
+                min-width: 120px;
+            }
+            
+            QPushButton:hover {
+                background-color: #303f9f;
+            }
+            
+            QPushButton:pressed {
+                background-color: #1a237e;
+            }
+            
+            /* Estilos para QTableWidget */
+            QTableWidget {
+                background-color: white;
+                alternate-background-color: #f9f9f9;
+                gridline-color: #eee;
+                border-radius: 4px;
+            }
+            
+            QHeaderView::section {
+                background-color: #3f51b5;
+                color: white;
+                padding: 8px;
+                border: none;
+            }
+            
+            QTableWidget::item {
+                padding: 8px;
+            }
+            
+            QTableWidget::item:selected {
+                background-color: #e3f2fd;
+                color: black;
+            }
+        """)
+    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Gestión de Transporte y Decomisos")
@@ -14,24 +101,10 @@ class GuiaTransporteApp(QWidget):
 
         self.db_ops = OperacionesDB()  # Instanciamos la clase para usar sus métodos
         self.setup_ui()
-
-        self.setStyleSheet("""
-            QWidget {
-                font-family: Arial;
-                font-size: 20px;
-            }
-            QLabel, QLineEdit, QComboBox, QSpinBox, QDateEdit, QPushButton {
-                font-size: 16px;
-                padding: 10px;  # Aumenta el padding (espacio interno) de los widgets
-            }
-            QLineEdit, QComboBox, QSpinBox, QDateEdit {
-                height: 40px;  # Aumenta la altura de los campos de entrada
-            }
-            QPushButton {
-                height: 40px;  # Aumenta la altura del botón
-            }
-        """)
-
+        
+        self.diccionario_animales = {}
+        self.apply_general_styles()
+        
     def setup_ui(self):
         layout = QVBoxLayout()
 
@@ -39,7 +112,6 @@ class GuiaTransporteApp(QWidget):
         self.grid_layout = QGridLayout()
 
         title_label = QLabel('Agregar Animal')
-        title_label.setStyleSheet("padding: 10px ;font-size: 24px; font-weight: bold; color: #3f51b5;")
         self.grid_layout.addWidget(title_label, 0, 3)  # Título en la primera fila, ocupa 2 columnas
 
         # Campos del formulario principal
@@ -67,7 +139,6 @@ class GuiaTransporteApp(QWidget):
         self.grid_layout.addWidget(self.conductor_combo, 2, 3)
 
         title_label = QLabel('Descripcion del Producto')
-        title_label.setStyleSheet("padding: 10px ;font-size: 24px; font-weight: bold; color: #3f51b5;")
         self.grid_layout.addWidget(title_label, 3, 3, 1, 2)
 
         self.grid_layout.addWidget(QLabel("Animal Disponible:"), 4, 0)
@@ -153,7 +224,7 @@ class GuiaTransporteApp(QWidget):
         self.data_table.resizeColumnsToContents()
         self.data_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
+        
         # Tabla para decomisos
         self.decomiso_table = QTableWidget()
         self.decomiso_table.setColumnCount(4)
@@ -210,7 +281,6 @@ class GuiaTransporteApp(QWidget):
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setWindowTitle("Advertencia")
             msg.setText("Seleccione el Destino")
-            msg.setStyleSheet("font-family: Arial;font-size: 20px;")
             msg.exec_()
             return
         elif animales == "Seleccione un Animal":
@@ -218,7 +288,6 @@ class GuiaTransporteApp(QWidget):
             msg.setIcon(QMessageBox.Icon.Warning)
             msg.setWindowTitle("Advertencia")
             msg.setText("Seleccione un Animal")
-            msg.setStyleSheet("font-family: Arial;font-size: 20px;")
             msg.exec_()
             return
         elif animales == "No hay Animales Disponibles":
@@ -260,7 +329,7 @@ class GuiaTransporteApp(QWidget):
 
         # Imprimir los datos añadidos
         for row in range(self.data_table.rowCount()):
-            row_data = [self.data_table.item(row, col).text() for col in range(self.data_table.columnCount())]
+            row_data = [self.data_table.item(row, col).text() if self.data_table.item(row, col) else " " for col in range(self.data_table.columnCount())]
             print(f"Datos en fila {row}: {row_data}")
 
         dictamen = self.data_table.item(row_position, 6).text()
@@ -305,7 +374,11 @@ class GuiaTransporteApp(QWidget):
 
     def load_destinos(self):
         destinos = self.db_ops.obtener_destinos()  # Llamamos al método para obtener destinos
-        self.destino_combo.addItems(destinos)
+        
+        for text,value in destinos:
+            print(f"este es el texto {text} y este el valor {value}")
+        
+            self.destino_combo.addItem(text,value)
 
     def load_plantas(self):
         plantas = self.db_ops.obtener_plantas()  # Llamamos al método para obtener plantas
@@ -329,6 +402,8 @@ class GuiaTransporteApp(QWidget):
 
         # Limpiar el combo box de animales
         self.animal_combo.clear()
+        #limpiamos el diccionario para evitar duplicidad en los datos
+        self.diccionario_animales.clear()
 
         if animales:
             self.animal_combo.addItem("Seleccione un Animal", -1)
@@ -336,6 +411,17 @@ class GuiaTransporteApp(QWidget):
             for numero_animal, id_ingreso_detalle, id_animales in animales:
                 # Usar el id_ingreso_detalle como el dato asociado al item
                 self.animal_combo.addItem(f"{numero_animal}", (id_ingreso_detalle, id_animales))
+                
+                # Convertir la clave a str si es necesario
+                numero_animal_str = str(numero_animal)
+
+                # Guardar la información en el diccionario para búsquedas rápidas
+                self.diccionario_animales[numero_animal_str] = (id_ingreso_detalle, id_animales)
+                
+                # Imprimir el contenido del diccionario y el tipo de cada clave y valor
+                print(f"Clave agregada: {numero_animal_str} (Tipo: {type(numero_animal_str)})")
+                print(f"Valor asociado: {self.diccionario_animales[numero_animal_str]} (Tipo: {type(self.diccionario_animales[numero_animal_str])})")
+
         else:
             self.animal_combo.addItem("No hay Animales Disponibles", -1)
 
@@ -347,7 +433,6 @@ class GuiaTransporteApp(QWidget):
         self.data_table.setRowCount(0)
         self.decomiso_table.setRowCount(0)
 
-
     def guardar_todo(self):
         """
         Recolecta todos los datos desde la interfaz (campos, combos, tablas) y los envía al back-end para ser guardados.
@@ -356,18 +441,30 @@ class GuiaTransporteApp(QWidget):
             # Recolectar datos generales del formulario
             fecha = self.fecha_input.date().toString("yyyy-MM-dd")
             id_planta = self.planta_combo.currentIndex() + 1  # Asume que los índices coinciden con los ID
+            id_destino = self.destino_combo.currentIndex()
             id_vehiculo = self.vehiculo_combo.currentIndex() + 1
             id_conductores = self.conductor_combo.currentIndex() + 1
-
-
+            
+            print(f"este es el id del destino {id_destino}")
+    
+    
             # Preparar detalles de la guía de transporte
             guia_transporte_detalle = []
 
             for row in range(self.data_table.rowCount()):
-                # Obtén los datos del combo para el animal seleccionado en esta fila
-                id_ingreso_detalle, id_animal = self.animal_combo.itemData(row)
+                # Obtén el número de animal de la fila actual
                 data_table_n_animal = self.data_table.item(row, 0).text()
-                print("este es el numero del animal", data_table_n_animal)
+                print(f"este es el numero del animal{data_table_n_animal}, y este su tipo{type(data_table_n_animal)}")
+
+                # Obtén el dato asociado al combo de animales de la fila actual
+                animal_data = self.diccionario_animales.get(data_table_n_animal)
+                print(f"Datos retornados por itemData en fila {row}: {animal_data}")
+
+                # Asegúrate de que 'animal_data' tenga la estructura correcta (id_ingreso_detalle, id_animal)
+                if animal_data:
+                    id_ingreso_detalle, id_animal = animal_data
+                else:
+                    continue  # Si no hay datos, salta a la siguiente fila
 
                 detalle = {
                     'id_ingreso_detalle': id_ingreso_detalle,
@@ -397,17 +494,20 @@ class GuiaTransporteApp(QWidget):
                                 'id_animal': detalle['id_animal'],  # Asociar al animal correcto
                                 'producto': producto,
                                 'cantidad': cantidad,
-                                'motivo': motivo
+                                'motivo': motivo,
+                                'fecha': fecha
                             }
                             print(f"Decomisos para animal {detalle['id_animal']}: {detalle['decomisos']}")
                             detalle['decomisos'].append(decomiso)
 
                 guia_transporte_detalle.append(detalle)
 
+
             # Preparar los datos para enviar al backend
             datos_para_guardar = {
                 'fecha': fecha,
                 'id_planta': id_planta,
+                'id_destino': id_destino,
                 'id_vehiculo': id_vehiculo,
                 'id_conductores': id_conductores,
                 'guia_transporte': guia_transporte_detalle
@@ -423,7 +523,6 @@ class GuiaTransporteApp(QWidget):
                 msg.setText("""
                 La Tabla Esta Vacia,
                 Ingrese Detalles Antes De Guardar""")
-                msg.setStyleSheet("font-family: Arial;font-size: 20px;")
                 msg.exec_()
             else:
                 print("La Lista Tiene Datos")
@@ -431,13 +530,7 @@ class GuiaTransporteApp(QWidget):
                 self.db_ops.guardar_datos_backend(datos_para_guardar)
                 self.limpiar()
 
-
         except Exception as e:
             self.mostrar_mensaje("Error", f"Ocurrió un error al recolectar los datos: {str(e)}")
-
-
-#if __name__ == "__main__":
-#    app = QApplication(sys.argv)
-#    window = GuiaTransporteApp()
-#    window.show()
-#    sys.exit(app.exec_())
+            print("Tracerback completo de el error")
+            print(traceback.format_exc())

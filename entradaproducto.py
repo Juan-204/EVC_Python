@@ -8,7 +8,71 @@ from PyQt5.QtWidgets import QTableWidgetItem, QWidget, QGridLayout, QLabel, QLin
 from consultas import OperacionesDB
 
 
+
 class AnimalForm(QWidget):
+    
+    def apply_general_styles(self):
+        self.setStyleSheet("""
+            /* Estilos generales para toda la ventana */
+            QWidget {
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 20px;
+                background-color: #f5f5f5;
+            }
+            
+            /* Estilos para QLabel */
+            QLabel {
+                font-weight: bold;
+                color: #333;
+                padding: 5px;
+            }
+            
+            /* Estilos para campos de entrada */
+            QLineEdit, QComboBox, QDateEdit {
+                background-color: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 8px;
+                min-height: 30px;
+                min-width: 150px;
+            }
+            
+
+            /* Estilos para QPushButton */
+            QPushButton {
+                background-color: #3f51b5;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 10px 15px;
+                min-width: 120px;
+            }
+
+            /* Estilos para QTableWidget */
+            QTableWidget {
+                background-color: white;
+                alternate-background-color: #f9f9f9;
+                gridline-color: #eee;
+                border-radius: 4px;
+            }
+            
+            QHeaderView::section {
+                background-color: #3f51b5;
+                color: white;
+                padding: 8px;
+                border: none;
+            }
+            
+            QTableWidget::item {
+                padding: 8px;
+            }
+            
+            QTableWidget::item:selected {
+                background-color: #e3f2fd;
+                color: black;
+            }
+        """)
+    
     def __init__(self):
         super().__init__()
         self.is_nuevo = True
@@ -16,12 +80,19 @@ class AnimalForm(QWidget):
         # Configuración de la ventana
         self.setWindowTitle('Agregar Animal')
         self.setGeometry(100, 100, 1100, 500)
+        
+        #diccionario de los establecimientos
+        self.diccionario_establecimientos = {}
 
         # Layout Grid
         grid_layout = QGridLayout()
+        grid_layout.setSpacing(20)
+        
+        self.apply_general_styles()
+        
 
         # Título
-        title_label = QLabel('Agregar Animal')
+        title_label = QLabel('Registro Diario de Sacrificio de Animales')
         title_label.setStyleSheet("padding: 10px ;font-size: 24px; font-weight: bold; color: #3f51b5;")
         grid_layout.addWidget(title_label, 0, 3)  # Título en la primera fila, ocupa 2 columnas
 
@@ -75,7 +146,7 @@ class AnimalForm(QWidget):
 
         # Guía de Movilización
         self.guia_movilizacion_input = QLineEdit(self)
-        self.guia_movilizacion_input.setValidator(QRegExpValidator(QRegExp("[0-9]*")))
+        #self.guia_movilizacion_input.setValidator(QRegExpValidator(QRegExp("[0-9]*")))
         grid_layout.addWidget(QLabel('Guía de Movilización:'), 3, 2)
         grid_layout.addWidget(self.guia_movilizacion_input, 3, 3)
 
@@ -112,36 +183,21 @@ class AnimalForm(QWidget):
 
         # Tabla para mostrar los animales ingresados
         self.table = QTableWidget(self)
-        self.table.setColumnCount(11)
+        self.table.setColumnCount(12)
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setHorizontalHeaderLabels(['Destino', '# Animal', 'Sexo', 'Kilos', '#.Tiquete', 'Fecha Ingreso', 'Guia Movilizacion', 'Fecha Guia ICA', '# De Corral', 'Especie', 'is_nuevo' ])
+        self.table.setHorizontalHeaderLabels(['Destino', '# Animal', 'Sexo', 'Kilos', '#.Tiquete', 'Fecha Ingreso', 'Guia Movilizacion', 'Fecha Guia ICA', '# De Corral', 'Especie', 'is_nuevo', 'id_destino' ])
         self.table.setColumnHidden(10, True)
+        self.table.setColumnHidden(11, True)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         grid_layout.addWidget(self.table, 7, 0, 1, 10)  # La tabla ocupa 6 columnas
 
         self.setLayout(grid_layout)
 
-        self.setStyleSheet("""
-            QWidget {
-                font-family: Arial;
-                font-size: 20px;
-            }
-            QLabel, QLineEdit, QComboBox, QSpinBox, QDateEdit, QPushButton {
-                font-size: 16px;
-                padding: 12px;  # Aumenta el padding (espacio interno) de los widgets
-            }
-            QLineEdit, QComboBox, QSpinBox, QDateEdit {
-                height: 40px;  # Aumenta la altura de los campos de entrada
-            }
-            QPushButton {
-                height: 40px;  # Aumenta la altura del botón
-            }
-        """)
-
     def on_submit(self):
         # Obtener los datos del formulario
         id_establecimiento = self.destino_input.currentData()
+        print(f"este es el establecimiento {id_establecimiento}")
         if id_establecimiento == -1:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Icon.Warning)
@@ -192,6 +248,7 @@ class AnimalForm(QWidget):
             "numero_corral" : self.numero_corral_input.text(),
             "especie": self.especie_input.currentText(),
             "is_nuevo": self.is_nuevo,
+            "id_destino": self.destino_input.currentData(),
         }
 
         validacion = True
@@ -242,6 +299,8 @@ class AnimalForm(QWidget):
 
         db = OperacionesDB()
         animales = db.obtener_ingreso_por_fecha(fecha)
+        
+        self.limpia()
 
         if not animales or not animales.get('detalles'):
             return  # Detiene la ejecución si no hay resultados
@@ -264,6 +323,7 @@ class AnimalForm(QWidget):
                 detalle["numero_corral"],
                 detalle["especie"],
                 detalle["is_nuevo"],
+                detalle["id_destino"],
             ]
 
             # Insertar una nueva fila
@@ -280,7 +340,6 @@ class AnimalForm(QWidget):
         db = OperacionesDB()
         destinos = db.obtener_establecimientos()
 
-
         if destinos:
             self.destino_input.addItem("Seleccione un destino", -1)
             for id, nombre_establecimiento in destinos:
@@ -288,17 +347,16 @@ class AnimalForm(QWidget):
         else:
             self.destino_input.addItem("No hay destinos disponibles", -1)
 
-
     def limpia(self):
         self.table.setRowCount(0)
 
     def guardar_en_db(self):
         animales = []
 
-        id_establecimiento = self.destino_input.currentData()
-        if id_establecimiento == -1:
-            print("Seleccione un Establecimiento")
-            return
+        # id_establecimiento = self.destino_input.currentData()
+        # if id_establecimiento == -1:
+        #     print("Seleccione un Establecimiento")
+        #     return
 
         for row in range(self.table.rowCount()):
             is_nuevo_item = self.table.item(row, 10)
@@ -307,7 +365,7 @@ class AnimalForm(QWidget):
                 continue  # Saltar filas que no son nuevas
 
             animal = {
-                "destino" : id_establecimiento,
+                "destino" : self.table.item(row, 11).text(),
                 "numero_animal" : self.table.item(row, 1).text(),
                 "sexo" : self.table.item(row, 2).text(),
                 "peso" : self.table.item(row, 3).text(),

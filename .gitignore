@@ -2,6 +2,9 @@
 build
 dist
 
+#carpeta de los reportes
+reportes_pdf
+
 #cache de python
 __pycache__
 
@@ -10,3 +13,4 @@ __pycache__
 
 #.idea
 .idea
+
